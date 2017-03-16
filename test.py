@@ -1,34 +1,33 @@
 # -*- coding: utf-8 -*-
 
-from keras.layers import Input, Embedding, LSTM, Dense
-from keras.models import Model
-import keras
+from keras.layers import Dense
+import tensorflow as tf
+from keras.objectives import categorical_crossentropy
+from tensorflow.examples.tutorials.mnist import input_data
+from keras.metrics import categorical_accuracy as accuracy
 
+sess = tf.Session()
 
-# Headline input: meant to receive sequences of 100 integers, between 1 and 10000.
-# Note that we can name any layer by passing it a "name" argument.
-main_input = Input(shape=(100,), dtype='int32', name='main_input')
+from keras import backend as K
+K.set_session(sess)
+# this placeholder will contain our input digits, as flat vectors
+img = tf.placeholder(tf.float32, shape=(None, 784))
+# Keras layers can be called on TensorFlow tensors:
+x = Dense(128, activation='relu')(img)  # fully-connected layer with 128 units and ReLU activation
+x = Dense(128, activation='relu')(x)
+preds = Dense(10, activation='softmax')(x)  # output layer with 10 units and a softmax activation
 
-# This embedding layer will encode the input sequence
-# into a sequence of dense 512-dimensional vectors.
-x = Embedding(output_dim=512, input_dim=10000, input_length=100)(main_input)
+labels = tf.placeholder(tf.float32, shape=(None, 10))
 
-# A LSTM will transform the vector sequence into a single vector,
-# containing information about the entire sequence
-lstm_out = LSTM(32)(x)
+loss = tf.reduce_mean(categorical_crossentropy(labels, preds))
 
-auxiliary_output = Dense(1, activation='sigmoid', name='aux_output')(lstm_out)
-auxiliary_input = Input(shape=(5,), name='aux_input')
-x = keras.layers.concatenate([lstm_out, auxiliary_input])
+mnist_data = input_data.read_data_sets('MNIST_data', one_hot=True)
 
-# We stack a deep densely-connected network on top
-x = Dense(64, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
+train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
 
-# And finally we add the main logistic regression layer
-main_output = Dense(1, activation='sigmoid', name='main_output')(x)
+with sess.as_default():
+    for i in range(100):
+        batch = mnist_data.train.next_batch(50)
+        train_step.run(feed_dict={img: batch[0],
+                                  labels: batch[1]})
 
-model = Model(inputs=[main_input, auxiliary_input], outputs=[main_output, auxiliary_output])
-model.compile(optimizer='rmsprop', loss='binary_crossentropy',
-              loss_weights=[1., 0.2])
