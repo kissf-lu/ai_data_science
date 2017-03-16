@@ -4,6 +4,7 @@ from keras.layers import Input, Embedding, LSTM, Dense
 from keras.models import Model
 import keras
 
+
 # Headline input: meant to receive sequences of 100 integers, between 1 and 10000.
 # Note that we can name any layer by passing it a "name" argument.
 main_input = Input(shape=(100,), dtype='int32', name='main_input')
