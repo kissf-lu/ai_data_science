@@ -1,33 +1,33 @@
 # -*- coding: utf-8 -*-
 
-from keras.layers import Dense
 import tensorflow as tf
-from keras.objectives import categorical_crossentropy
-from tensorflow.examples.tutorials.mnist import input_data
-from keras.metrics import categorical_accuracy as accuracy
+import numpy as np
+import input_data
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+# 使用 NumPy 生成假数据(phony data), 总共 100 个点.
+x_data = np.float32(np.random.rand(2, 100)) #  随机输入
+y_data = np.dot([0.100, 0.200], x_data) + 0.300
 
+# 构造一个线性模型
+#
+b = tf.Variable(tf.zeros([1]))
+W = tf.Variable(tf.random_uniform([1, 2], -1.0, 1.0))
+y = tf.matmul(W, x_data) + b
+
+# 最小化方差
+loss = tf.reduce_mean(tf.square(y - y_data))
+optimizer = tf.train.GradientDescentOptimizer(0.5)
+train = optimizer.minimize(loss)
+
+# 初始化变量
+init = tf.initialize_all_variables()
+
+# 启动图 (graph)
 sess = tf.Session()
+sess.run(init)
 
-from keras import backend as K
-K.set_session(sess)
-# this placeholder will contain our input digits, as flat vectors
-img = tf.placeholder(tf.float32, shape=(None, 784))
-# Keras layers can be called on TensorFlow tensors:
-x = Dense(128, activation='relu')(img)  # fully-connected layer with 128 units and ReLU activation
-x = Dense(128, activation='relu')(x)
-preds = Dense(10, activation='softmax')(x)  # output layer with 10 units and a softmax activation
-
-labels = tf.placeholder(tf.float32, shape=(None, 10))
-
-loss = tf.reduce_mean(categorical_crossentropy(labels, preds))
-
-mnist_data = input_data.read_data_sets('MNIST_data', one_hot=True)
-
-train_step = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
-
-with sess.as_default():
-    for i in range(100):
-        batch = mnist_data.train.next_batch(50)
-        train_step.run(feed_dict={img: batch[0],
-                                  labels: batch[1]})
-
+# 拟合平面
+for step in range(0, 201):
+    sess.run(train)
+    if step % 20 == 0:
+        print (step, sess.run(W), sess.run(b))
